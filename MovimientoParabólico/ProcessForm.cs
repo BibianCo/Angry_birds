@@ -1,0 +1,477 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Drawing;
+using System.Windows.Forms;
+
+namespace MovimientoParabólico
+{
+    public partial class ProcessForm : Form
+    {
+        public ProcessForm()
+        {
+            InitializeComponent();
+        }
+
+        BackForm backForm;
+        Cálculos formCalculos;
+
+        int startMouseX, startMouseY;
+        int deltaX, deltaY;
+        int initialTejoX, initialTejoY;
+
+        double x0, y0;
+        double v0x, v0y;
+        double gravity = 9.8;
+        double t = 0;
+        double tAcumulado = 0;
+
+        bool enMovimiento = false;
+        bool simulacionTerminada = false;
+
+        // ─── Rebotes ──────────────────────────────────────────────────────
+        int numRebotes = 0;
+        const int MAX_REBOTES = 2;
+        const double FACTOR_REBOTE = 0.6;
+
+        // Cooldowns independientes por superficie.
+        // cooldownPlataforma se activa al inicio para evitar rebote espurio en t=0.
+        // cooldownSuelo arranca en 0 porque el tejo empieza en el aire.
+        int cooldownPlataforma = 0;
+        int cooldownSuelo = 0;
+        const int COOLDOWN_PLATAFORMA_TICKS = 8;
+        const int COOLDOWN_SUELO_TICKS = 5;
+
+        // ─── Listas trayectoria ───────────────────────────────────────────
+        List<double> listT = new List<double>();
+        List<double> listX = new List<double>();
+        List<double> listY = new List<double>();
+        List<double> listVx = new List<double>();
+        List<double> listVy = new List<double>();
+        List<double> listV = new List<double>();
+        List<double> listAng = new List<double>();
+
+        // ─── Listas rebotes ───────────────────────────────────────────────
+        List<double> reboteT = new List<double>();
+        List<double> reboteX = new List<double>();
+        List<double> reboteY = new List<double>();
+        List<double> reboteVx = new List<double>();
+        List<double> reboteVy = new List<double>();
+        List<double> reboteV = new List<double>();
+        List<double> reboteAng = new List<double>();
+
+        // ════════════════════════════════════════════════════════════════
+        //  LOAD
+        // ════════════════════════════════════════════════════════════════
+        private void ProcessForm_Load(object sender, EventArgs e)
+        {
+            backForm = new BackForm()
+            {
+                StartPosition = FormStartPosition.Manual,
+                Size          = this.Size,
+                Location      = this.Location,
+                ShowInTaskbar = false
+            };
+            backForm.Show();
+
+            formCalculos = new Cálculos();
+            formCalculos.StartPosition = FormStartPosition.Manual;
+
+            this.BringToFront();
+
+            picTejoF.Location       = backForm.TejoLocation;
+            picTejoF.Size           = backForm.TejoSize;
+            picObstaculoF.Location  = backForm.ObstaculoLocation;
+            picObstaculoF.Size      = backForm.ObstaculoSize;
+            picSueloF.Location      = backForm.SueloLocation;
+            picSueloF.Size          = backForm.SueloSize;
+            picObjetivoF.Location   = backForm.ObjetivoLocation;
+            picObjetivoF.Size       = backForm.ObjetivoSize;
+            picPlataformaF.Location = backForm.PlatafromaLocation;
+            picPlataformaF.Size     = backForm.PlataformaSize;
+
+            initialTejoX = picTejoF.Location.X;
+            initialTejoY = picTejoF.Location.Y;
+
+            PosicionarObjetivosAleatorio();
+        }
+
+        private void PosicionarObjetivosAleatorio()
+        {
+            Random rnd = new Random();
+
+            int pxPlataforma = rnd.Next(360, 550);
+            int pyPlataforma = rnd.Next(200, 380);
+            Point posPlataforma = new Point(pxPlataforma, pyPlataforma);
+            picPlataformaF.Location     = posPlataforma;
+            backForm.PlatafromaLocation = posPlataforma;
+
+            int pyCerdito = rnd.Next(100, 350);
+            Point posCerdito = new Point(680, pyCerdito);
+            picObjetivoF.Location     = posCerdito;
+            backForm.ObjetivoLocation = posCerdito;
+        }
+
+        // ════════════════════════════════════════════════════════════════
+        //  MOVE
+        // ════════════════════════════════════════════════════════════════
+        private void ProcessForm_Move(object sender, EventArgs e)
+        {
+            if ( backForm != null )
+                backForm.Location = this.Location;
+        }
+
+        private void ProcessForm_Resize(object sender, EventArgs e)
+        {
+            if ( backForm != null )
+            {
+                backForm.Size     = this.Size;
+                backForm.Location = this.Location;
+            }
+        }
+
+        // ════════════════════════════════════════════════════════════════
+        //  BOTÓN REINICIAR
+        // ════════════════════════════════════════════════════════════════
+        private void button1_Click(object sender, EventArgs e)
+        {
+            Application.Restart();
+        }
+
+        // ════════════════════════════════════════════════════════════════
+        //  BOTÓN MOSTRAR / OCULTAR CÁLCULOS
+        // ════════════════════════════════════════════════════════════════
+        private void btnMostrar_Click(object sender, EventArgs e)
+        {
+            if ( formCalculos == null || formCalculos.IsDisposed )
+            {
+                formCalculos = new Cálculos();
+                formCalculos.StartPosition = FormStartPosition.Manual;
+            }
+
+            if ( formCalculos.Visible )
+            {
+                formCalculos.Hide();
+                btnMostrar.Text = "Mostrar datos";
+            }
+            else
+            {
+                formCalculos.StartPosition = FormStartPosition.CenterScreen;
+                formCalculos.Show();
+                formCalculos.StartPosition = FormStartPosition.Manual;
+                btnMostrar.Text = "Ocultar datos";
+            }
+
+            this.BringToFront();
+        }
+
+        // ════════════════════════════════════════════════════════════════
+        //  ARRASTRE DEL TEJO
+        // ════════════════════════════════════════════════════════════════
+        private void picTejoF_MouseDown(object sender, MouseEventArgs e)
+        {
+            if ( enMovimiento || simulacionTerminada ) return;
+            if ( e.Button == MouseButtons.Left )
+            {
+                startMouseX = e.X;
+                startMouseY = e.Y;
+            }
+        }
+
+        private void picTejoF_MouseMove(object sender, MouseEventArgs e)
+        {
+            if ( enMovimiento || simulacionTerminada ) return;
+            if ( e.Button == MouseButtons.Left )
+            {
+                int newX = picTejoF.Location.X + e.X - startMouseX;
+                int newY = picTejoF.Location.Y + e.Y - startMouseY;
+                picTejoF.Location = new Point(newX, newY);
+                deltaX = initialTejoX - picTejoF.Location.X;
+                deltaY = picTejoF.Location.Y - initialTejoY;
+            }
+        }
+
+        private void picTejoF_MouseUp(object sender, MouseEventArgs e)
+        {
+            if ( enMovimiento || simulacionTerminada ) return;
+            if ( e.Button == MouseButtons.Left )
+            {
+                LimpiarDatos();
+                numRebotes = 0;
+
+                formCalculos.LimpiarTabla();
+                formCalculos.LimpiarGraficas();
+
+                // Ambos cooldowns activos al inicio:
+                // - plataforma: evita rebote fantasma si el tejo se suelta cerca de ella.
+                // - suelo: protege los primeros ticks mientras x0 es negativo
+                //   y el tejo aún no ha salido de la "cuerda" de la resortera.
+                cooldownPlataforma = COOLDOWN_PLATAFORMA_TICKS;
+                cooldownSuelo      = COOLDOWN_SUELO_TICKS;
+
+                // Lógica resortera: el tejo se jala hacia izquierda y abajo,
+                // sale disparado hacia derecha y arriba.
+                // x0 negativo = cuerda estirada hacia atrás (se compensa con v0x en los primeros ticks).
+                // v0x mínimo 1 para evitar que un tiro casi vertical deje v0x=0
+                // y genere colisión fantasma con la plataforma en xt≈0.
+                // FIX: y0 = 0 siempre. v0y ya captura el impulso vertical;
+                // meter deltaY en y0 causaba Y negativa desde t=0 →
+                // el tejo empezaba bajo el suelo y generaba rebote fantasma.
+                x0  = -Math.Abs(deltaX);
+                y0  = 0;
+                v0x = Math.Max(1.0, Math.Abs(deltaX) * 1.0);
+                v0y = deltaY;
+
+                t          = 0;
+                tAcumulado = 0;
+
+                formCalculos.EstablecerVelocidadInicial(v0x, v0y);
+
+                enMovimiento   = true;
+                timer1.Enabled = true;
+            }
+        }
+
+        // ════════════════════════════════════════════════════════════════
+        //  TIMER
+        // ════════════════════════════════════════════════════════════════
+        private void timer1_Tick(object sender, EventArgs e)
+        {
+            // 1. Física
+            double xt = v0x * t + x0;
+            double yt = -0.5 * gravity * t * t + v0y * t + y0;
+            double vxt = v0x;                        // FIX 3: vx siempre >= 0, nunca negativo
+            double vyt = -gravity * t + v0y;
+            double vt = Math.Sqrt(vxt * vxt + vyt * vyt);
+            double ang = Math.Atan2(vyt, vxt) * 180.0 / Math.PI;
+
+            // 2. Mover tejo
+            picTejoF.Location = new Point(
+                initialTejoX + (int)xt,
+                initialTejoY - (int)yt
+            );
+
+            // 3. Guardar datos
+            listT.Add(Math.Round(tAcumulado, 2));
+            listX.Add(Math.Round(xt, 2));
+            listY.Add(Math.Round(yt, 2));
+            listVx.Add(Math.Round(vxt, 2));
+            listVy.Add(Math.Round(vyt, 2));
+            listV.Add(Math.Round(vt, 2));
+            listAng.Add(Math.Round(ang, 2));
+
+            // 4. Reducir cooldowns de forma independiente
+            if ( cooldownPlataforma > 0 ) cooldownPlataforma--;
+            if ( cooldownSuelo      > 0 ) cooldownSuelo--;
+
+            // 5. Actualizar cálculos (siempre, antes de cualquier return)
+            formCalculos.ActualizarEnTiempoReal(
+                tAcumulado, xt, yt, vxt, vyt, vt, ang,
+                listT, listX, listY,
+                listVx, listVy, listV, listAng,
+                reboteT, reboteX, reboteY,
+                reboteVx, reboteVy, reboteV, reboteAng
+            );
+
+            // ── CERDITO → detener ────────────────────────────────────────
+            if ( picTejoF.Bounds.IntersectsWith(picObjetivoF.Bounds) )
+            {
+                Detener($"¡Le diste a King Pig!\n\nPosición: ({xt:F1}, {yt:F1}) px\nVelocidad: {vt:F2} px/s",
+                    "¡Impacto!", MessageBoxIcon.Information);
+                return;
+            }
+
+            // ── OBSTÁCULO → detener ──────────────────────────────────────
+            if ( picTejoF.Bounds.IntersectsWith(picObstaculoF.Bounds) )
+            {
+                Detener("Chocaste con el obstáculo ", "Colisión", MessageBoxIcon.Warning);
+                return;
+            }
+
+            // ── PLATAFORMA → rebote ───────────────────────────────────────
+            // FIX 4: xt > 1 para ignorar el tick inicial en origen (rebote fantasma)
+            if ( picTejoF.Bounds.IntersectsWith(picPlataformaF.Bounds)
+                && cooldownPlataforma == 0
+                && numRebotes < MAX_REBOTES
+                && xt > 1.0 )
+            {
+                Rectangle tejo = picTejoF.Bounds;
+                Rectangle plat = picPlataformaF.Bounds;
+
+                double newVx = vxt;
+                double newVy = vyt;
+
+                int overlapTop = tejo.Bottom - plat.Top;
+                int overlapBottom = plat.Bottom  - tejo.Top;
+                int overlapLeft = tejo.Right   - plat.Left;
+                int overlapRight = plat.Right   - tejo.Left;
+
+                int minVertical = Math.Min(overlapTop, overlapBottom);
+                int minHorizontal = Math.Min(overlapLeft, overlapRight);
+
+                double yFisicoRebote;
+
+                if ( minVertical <= minHorizontal )
+                {
+                    // Rebote vertical (superior o inferior de la plataforma)
+                    if ( vyt <= 0 )
+                    {
+                        // Tejo cae sobre la plataforma desde arriba
+                        picTejoF.Top  = plat.Top - picTejoF.Height;
+                        yFisicoRebote = initialTejoY - picTejoF.Top;
+                        newVx =  vxt * FACTOR_REBOTE;           // vx siempre positivo
+                        newVy =  Math.Abs(vyt) * FACTOR_REBOTE; // rebotar hacia arriba
+                        x0    = xt;
+                        y0    = yFisicoRebote;
+                    }
+                    else
+                    {
+                        // Tejo golpea la base de la plataforma desde abajo
+                        picTejoF.Top  = plat.Bottom;
+                        yFisicoRebote = initialTejoY - picTejoF.Top;
+                        newVx =  vxt * FACTOR_REBOTE;
+                        newVy = -Math.Abs(vyt) * FACTOR_REBOTE; // rebotar hacia abajo
+                        x0    = xt;
+                        y0    = yFisicoRebote;
+                    }
+                }
+                else
+                {
+                    // Rebote lateral: invertir vx en dirección contraria con FACTOR_REBOTE.
+                    if ( vxt >= 0 )
+                    {
+                        // Venía hacia la derecha → golpea lado izquierdo → rebota hacia la izquierda
+                        picTejoF.Left = plat.Left - picTejoF.Width;
+                        newVx = -Math.Abs(vxt) * FACTOR_REBOTE;
+                        newVy =  vyt * FACTOR_REBOTE;
+                    }
+                    else
+                    {
+                        // Venía hacia la izquierda → golpea lado derecho → rebota hacia la derecha
+                        picTejoF.Left = plat.Right;
+                        newVx =  Math.Abs(vxt) * FACTOR_REBOTE;
+                        newVy =  vyt * FACTOR_REBOTE;
+                    }
+                    yFisicoRebote = yt;
+                    x0 = xt;
+                    y0 = yt;
+                }
+
+                numRebotes++;
+                // Al rebotar en plataforma: resetear solo cooldown de plataforma.
+                // cooldownSuelo queda en 0 para que pueda rebotar en suelo de inmediato.
+                cooldownPlataforma = COOLDOWN_PLATAFORMA_TICKS;
+                cooldownSuelo      = 0;
+
+                double vRebote = Math.Sqrt(newVx * newVx + newVy * newVy);
+                double angRebote = Math.Atan2(newVy, newVx) * 180.0 / Math.PI;
+
+                GuardarRebote(tAcumulado, xt, yFisicoRebote, newVx, newVy, vRebote, angRebote);
+                formCalculos.ImprimirRebote(numRebotes, tAcumulado, xt, yFisicoRebote,
+                                             newVx, newVy, vRebote, angRebote);
+                v0x = newVx;
+                v0y = newVy;
+                t   = 0;
+
+                tAcumulado += 0.05;
+                return;
+            }
+
+            // ── SUELO → rebotar o detener ─────────────────────────────────
+            if ( picTejoF.Bottom >= picSueloF.Top && cooldownSuelo == 0 )
+            {
+                if ( numRebotes < MAX_REBOTES )
+                {
+                    picTejoF.Top = picSueloF.Top - picTejoF.Height;
+                    double yFisicoSuelo = initialTejoY - picTejoF.Top;
+
+                    // FIX 6: vx siempre positivo en rebote de suelo
+                    double newVx = Math.Abs(vxt) * FACTOR_REBOTE;
+                    double newVy = Math.Abs(vyt) * FACTOR_REBOTE; // rebotar hacia arriba
+                    double vRebote = Math.Sqrt(newVx * newVx + newVy * newVy);
+                    double angRebote = Math.Atan2(newVy, newVx) * 180.0 / Math.PI;
+
+                    numRebotes++;
+                    // Al rebotar en suelo: resetear solo cooldown de suelo.
+                    cooldownSuelo = COOLDOWN_SUELO_TICKS;
+
+                    GuardarRebote(tAcumulado, xt, yFisicoSuelo, newVx, newVy, vRebote, angRebote);
+                    formCalculos.ImprimirRebote(numRebotes, tAcumulado, xt, yFisicoSuelo,
+                                                 newVx, newVy, vRebote, angRebote);
+                    v0x = newVx;
+                    v0y = newVy;
+                    x0  = xt;
+                    y0  = yFisicoSuelo;
+                    t   = 0;
+                }
+                else
+                {
+                    Detener("Baby Rosi cayó al suelo :C", "Fin", MessageBoxIcon.Information);
+                }
+
+                tAcumulado += 0.05;
+                return;
+            }
+
+            // ── TECHO → detener ──────────────────────────────────────────
+            if ( picTejoF.Top <= 0 )
+            {
+                Detener("Baby Rosi salió por el techo", "Fin", MessageBoxIcon.Information);
+                return;
+            }
+
+            // ── BORDE IZQUIERDO → detener ────────────────────────────────
+            if ( picTejoF.Left <= 0 )
+            {
+                Detener("Baby Rosi salió por la izquierda", "Fin", MessageBoxIcon.Information);
+                return;
+            }
+
+            // ── BORDE DERECHO → detener ──────────────────────────────────
+            if ( picTejoF.Right >= this.ClientSize.Width )
+            {
+                Detener("Baby Rosi salió por la derecha", "Fin", MessageBoxIcon.Information);
+                return;
+            }
+
+            t          += 0.05;
+            tAcumulado += 0.05;
+        }
+
+        // ════════════════════════════════════════════════════════════════
+        //  HELPERS
+        // ════════════════════════════════════════════════════════════════
+        private void Detener(string mensaje, string titulo, MessageBoxIcon icono)
+        {
+            timer1.Enabled      = false;
+            enMovimiento        = false;
+            simulacionTerminada = true;
+
+            formCalculos.FinalizarTabla(numRebotes);
+
+            MessageBox.Show(mensaje, titulo, MessageBoxButtons.OK, icono);
+        }
+
+        private void GuardarRebote(double tAcum, double x, double y,
+                                    double vx, double vy, double v, double ang)
+        {
+            reboteT.Add(Math.Round(tAcum, 2));
+            reboteX.Add(Math.Round(x, 2));
+            reboteY.Add(Math.Round(y, 2));
+            reboteVx.Add(Math.Round(vx, 2));
+            reboteVy.Add(Math.Round(vy, 2));
+            reboteV.Add(Math.Round(v, 2));
+            reboteAng.Add(Math.Round(ang, 2));
+        }
+
+        private void LimpiarDatos()
+        {
+            listT.Clear(); listX.Clear(); listY.Clear();
+            listVx.Clear(); listVy.Clear(); listV.Clear();
+            listAng.Clear();
+
+            reboteT.Clear(); reboteX.Clear(); reboteY.Clear();
+            reboteVx.Clear(); reboteVy.Clear(); reboteV.Clear();
+            reboteAng.Clear();
+        }
+    }
+}
