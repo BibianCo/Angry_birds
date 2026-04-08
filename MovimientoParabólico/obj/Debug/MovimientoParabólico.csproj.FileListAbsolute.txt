@@ -22,3 +22,15 @@ C:\Users\bibia\Documents\Universidad\8-Semestre\Simulacion de Computadores\Movim
 C:\Users\bibia\Documents\Universidad\8-Semestre\Simulacion de Computadores\MovimientoParabólico\MovimientoParabólico\MovimientoParabólico\MovimientoParabólico\obj\Debug\MovimientoParabólico.Properties.Resources.resources
 C:\Users\bibia\Documents\Universidad\8-Semestre\Simulacion de Computadores\MovimientoParabólico\MovimientoParabólico\MovimientoParabólico\MovimientoParabólico\obj\Debug\MovimientoParabólico.csproj.GenerateResource.cache
 C:\Users\bibia\Documents\Universidad\8-Semestre\Simulacion de Computadores\MovimientoParabólico\MovimientoParabólico\MovimientoParabólico\MovimientoParabólico\obj\Debug\MovimientoParabólico.csproj.CoreCompileInputs.cache
+C:\Users\Valentina\University\SEMESTRE 8\Simulación computadores\Angry_birds\MovimientoParabólico\bin\Debug\MovimientoParabólico.exe.config
+C:\Users\Valentina\University\SEMESTRE 8\Simulación computadores\Angry_birds\MovimientoParabólico\bin\Debug\MovimientoParabólico.exe
+C:\Users\Valentina\University\SEMESTRE 8\Simulación computadores\Angry_birds\MovimientoParabólico\bin\Debug\MovimientoParabólico.pdb
+C:\Users\Valentina\University\SEMESTRE 8\Simulación computadores\Angry_birds\MovimientoParabólico\obj\Debug\MovimientoParabólico.csproj.AssemblyReference.cache
+C:\Users\Valentina\University\SEMESTRE 8\Simulación computadores\Angry_birds\MovimientoParabólico\obj\Debug\MovimientoParabólico.BackForm.resources
+C:\Users\Valentina\University\SEMESTRE 8\Simulación computadores\Angry_birds\MovimientoParabólico\obj\Debug\MovimientoParabólico.Cálculos.resources
+C:\Users\Valentina\University\SEMESTRE 8\Simulación computadores\Angry_birds\MovimientoParabólico\obj\Debug\MovimientoParabólico.ProcessForm.resources
+C:\Users\Valentina\University\SEMESTRE 8\Simulación computadores\Angry_birds\MovimientoParabólico\obj\Debug\MovimientoParabólico.Properties.Resources.resources
+C:\Users\Valentina\University\SEMESTRE 8\Simulación computadores\Angry_birds\MovimientoParabólico\obj\Debug\MovimientoParabólico.csproj.GenerateResource.cache
+C:\Users\Valentina\University\SEMESTRE 8\Simulación computadores\Angry_birds\MovimientoParabólico\obj\Debug\MovimientoParabólico.csproj.CoreCompileInputs.cache
+C:\Users\Valentina\University\SEMESTRE 8\Simulación computadores\Angry_birds\MovimientoParabólico\obj\Debug\MovimientoParabólico.exe
+C:\Users\Valentina\University\SEMESTRE 8\Simulación computadores\Angry_birds\MovimientoParabólico\obj\Debug\MovimientoParabólico.pdb

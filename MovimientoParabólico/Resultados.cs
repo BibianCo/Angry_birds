@@ -10,7 +10,7 @@ namespace MovimientoParabólico
     {
         private double v0x, v0y;
 
-        // ── Datos acumulados (siempre se guardan, independiente de visibilidad) ──
+        // ── Datos acumulados 
         private List<double[]> puntosTabla = new List<double[]>();
 
         private List<double> _listT = new List<double>();
@@ -29,7 +29,7 @@ namespace MovimientoParabólico
         private List<double> _reboteV = new List<double>();
         private List<double> _reboteAng = new List<double>();
 
-        // Último estado recibido (para refrescar al abrir el form)
+        // Último estado recibido 
         private double _ultT, _ultXt, _ultYt, _ultVxt, _ultVyt, _ultVt, _ultAng;
         private bool _hayDatos = false;
 
@@ -58,9 +58,8 @@ namespace MovimientoParabólico
             base.WndProc(ref m);
         }
 
-        // ════════════════════════════════════════════════════════════════
         //  VELOCIDAD INICIAL
-        // ════════════════════════════════════════════════════════════════
+
         public void EstablecerVelocidadInicial(double vx0, double vy0)
         {
             v0x = vx0;
@@ -77,10 +76,7 @@ namespace MovimientoParabólico
                 lblAngVelx0.Text = $"{ang:F2} °";
             }
         }
-
-        // ════════════════════════════════════════════════════════════════
         //  ACTUALIZACIÓN EN TIEMPO REAL
-        // ════════════════════════════════════════════════════════════════
         public void ActualizarEnTiempoReal(
             double t, double xt, double yt,
             double vxt, double vyt, double vt, double ang,
@@ -91,12 +87,12 @@ namespace MovimientoParabólico
             List<double> reboteVx, List<double> reboteVy, List<double> reboteV,
             List<double> reboteAng)
         {
-            // ── Guardar último estado siempre, independiente de visibilidad ──
+            // Guardar último estado siempre
             _ultT = t; _ultXt = xt; _ultYt = yt;
             _ultVxt = vxt; _ultVyt = vyt; _ultVt = vt; _ultAng = ang;
             _hayDatos = true;
 
-            // Copiar snapshot de todas las listas (incluye rebotes)
+            // Copiar snapshot de todas las listas incluyendo datosde rebote
             CopiarListas(listT, listX, listY, listVx, listVy, listV, listAng,
                          reboteT, reboteX, reboteY, reboteVx, reboteVy, reboteV, reboteAng);
 
@@ -110,21 +106,17 @@ namespace MovimientoParabólico
             ActualizarGraficas();
         }
 
-        // ════════════════════════════════════════════════════════════════
-        //  REFRESCAR TODO (se llama al abrir el form con datos ya cargados)
-        // ════════════════════════════════════════════════════════════════
         private void RefrescarTodo()
         {
             RefrescarLabels();
             ActualizarGraficas();
         }
 
-        // ════════════════════════════════════════════════════════════════
         //  REFRESCAR LABELS
-        // ════════════════════════════════════════════════════════════════
+
         private void RefrescarLabels()
         {
-            // ── Velocidad inicial (fija, usa campos guardados) ──
+            // Velocidad inicial 
             double mag0 = Math.Sqrt(v0x * v0x + v0y * v0y);
             double ang0 = Math.Atan2(v0y, v0x) * 180.0 / Math.PI;
             lblVelX0.Text    = $"{v0x:F2} px/s";
@@ -132,7 +124,7 @@ namespace MovimientoParabólico
             lblMagVel0.Text  = $"{mag0:F2} px/s";
             lblAngVelx0.Text = $"{ang0:F2} °";
 
-            // ── Datos generales ──
+            //  Datos generales 
             lblTiempoVuelo.Text = $"{_ultT:F2} s";
             lblAlcance.Text     = $"{_ultXt:F2} px";
 
@@ -152,16 +144,14 @@ namespace MovimientoParabólico
                 lblAngVelX.Text = $"{_listAng[idxAltMax]:F2} °";
             }
 
-            // ── Velocidad final (instante actual) ──
+            //  Velocidad final 
             lblVelXf.Text   = $"{_ultVxt:F2} px/s";
             lblVelYf.Text   = $"{_ultVyt:F2} px/s";
             lblMagVelF.Text = $"{_ultVt:F2} px/s";
             lblAngVelF.Text = $"{_ultAng:F2} °";
         }
 
-        // ════════════════════════════════════════════════════════════════
-        //  COPIAR LISTAS (snapshot para uso interno)
-        // ════════════════════════════════════════════════════════════════
+        //  COPIAR LISTAS 
         private void CopiarListas(
             List<double> listT, List<double> listX, List<double> listY,
             List<double> listVx, List<double> listVy, List<double> listV,
@@ -187,9 +177,7 @@ namespace MovimientoParabólico
             _reboteAng = new List<double>(reboteAng);
         }
 
-        // ════════════════════════════════════════════════════════════════
         //  LIMPIAR LISTAS INTERNAS
-        // ════════════════════════════════════════════════════════════════
         private void LimpiarListasInternas()
         {
             _listT.Clear(); _listX.Clear(); _listY.Clear();
@@ -208,9 +196,7 @@ namespace MovimientoParabólico
 
         }
 
-        // ════════════════════════════════════════════════════════════════
         //  FINALIZAR TABLA
-        // ════════════════════════════════════════════════════════════════
         public void FinalizarTabla(int numRebotes)
         {
             if ( puntosTabla.Count == 0 ) return;
@@ -241,9 +227,7 @@ namespace MovimientoParabólico
             }
         }
 
-        // ════════════════════════════════════════════════════════════════
         //  REBOTES EN TABLA
-        // ════════════════════════════════════════════════════════════════
         public void ImprimirRebote(int rebote, double t, double x, double y,
                                     double vx, double vy, double v, double ang)
         {
@@ -255,9 +239,7 @@ namespace MovimientoParabólico
             );
         }
 
-        // ════════════════════════════════════════════════════════════════
         //  GRÁFICAS
-        // ════════════════════════════════════════════════════════════════
         private void ActualizarGraficas()
         {
             LlenarChart(chartYT, _listT, _listY, _reboteT, _reboteY);
@@ -287,13 +269,10 @@ namespace MovimientoParabólico
                 chart.Series["Rebotes"].Points.AddXY(rebX[i], rebY[i]);
         }
 
-        // ════════════════════════════════════════════════════════════════
         //  LIMPIAR (llamado desde ProcessForm al reiniciar)
-        // ════════════════════════════════════════════════════════════════
+
         public void LimpiarGraficas()
         {
-            // FIX: limpiar listas internas ANTES de limpiar los charts
-            // para que no queden datos de rebotes de ejecuciones anteriores
             LimpiarListasInternas();
             _hayDatos = false;
 
@@ -312,10 +291,8 @@ namespace MovimientoParabólico
             _hayDatos = false;
             ResetearLabels();
         }
-
-        // ════════════════════════════════════════════════════════════════
+        
         //  RESET LABELS
-        // ════════════════════════════════════════════════════════════════
         private void ResetearLabels()
         {
             lblTiempoVuelo.Text = "---"; lblAlcance.Text  = "---"; lblAltMax.Text   = "---";

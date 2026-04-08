@@ -28,7 +28,7 @@ namespace MovimientoParabólico
         bool enMovimiento = false;
         bool simulacionTerminada = false;
 
-        // ─── Rebotes ──────────────────────────────────────────────────────
+        // Rebotes 
         int numRebotes = 0;
         const int MAX_REBOTES = 2;
         const double FACTOR_REBOTE = 0.6;
@@ -41,7 +41,7 @@ namespace MovimientoParabólico
         const int COOLDOWN_PLATAFORMA_TICKS = 8;
         const int COOLDOWN_SUELO_TICKS = 5;
 
-        // ─── Listas trayectoria ───────────────────────────────────────────
+        // Listas trayectoria
         List<double> listT = new List<double>();
         List<double> listX = new List<double>();
         List<double> listY = new List<double>();
@@ -50,7 +50,7 @@ namespace MovimientoParabólico
         List<double> listV = new List<double>();
         List<double> listAng = new List<double>();
 
-        // ─── Listas rebotes ───────────────────────────────────────────────
+        // Listas rebotes 
         List<double> reboteT = new List<double>();
         List<double> reboteX = new List<double>();
         List<double> reboteY = new List<double>();
@@ -59,9 +59,7 @@ namespace MovimientoParabólico
         List<double> reboteV = new List<double>();
         List<double> reboteAng = new List<double>();
 
-        // ════════════════════════════════════════════════════════════════
         //  LOAD
-        // ════════════════════════════════════════════════════════════════
         private void ProcessForm_Load(object sender, EventArgs e)
         {
             backForm = new BackForm()
@@ -111,9 +109,7 @@ namespace MovimientoParabólico
             backForm.ObjetivoLocation = posCerdito;
         }
 
-        // ════════════════════════════════════════════════════════════════
         //  MOVE
-        // ════════════════════════════════════════════════════════════════
         private void ProcessForm_Move(object sender, EventArgs e)
         {
             if ( backForm != null )
@@ -129,17 +125,13 @@ namespace MovimientoParabólico
             }
         }
 
-        // ════════════════════════════════════════════════════════════════
         //  BOTÓN REINICIAR
-        // ════════════════════════════════════════════════════════════════
         private void button1_Click(object sender, EventArgs e)
         {
             Application.Restart();
         }
 
-        // ════════════════════════════════════════════════════════════════
         //  BOTÓN MOSTRAR / OCULTAR CÁLCULOS
-        // ════════════════════════════════════════════════════════════════
         private void btnMostrar_Click(object sender, EventArgs e)
         {
             if ( formCalculos == null || formCalculos.IsDisposed )
@@ -164,9 +156,8 @@ namespace MovimientoParabólico
             this.BringToFront();
         }
 
-        // ════════════════════════════════════════════════════════════════
-        //  ARRASTRE DEL TEJO
-        // ════════════════════════════════════════════════════════════════
+        //  ARRASTRE DEL ANGRY BIRD
+
         private void picTejoF_MouseDown(object sender, MouseEventArgs e)
         {
             if ( enMovimiento || simulacionTerminada ) return;
@@ -201,21 +192,12 @@ namespace MovimientoParabólico
                 formCalculos.LimpiarTabla();
                 formCalculos.LimpiarGraficas();
 
-                // Ambos cooldowns activos al inicio:
-                // - plataforma: evita rebote fantasma si el tejo se suelta cerca de ella.
-                // - suelo: protege los primeros ticks mientras x0 es negativo
-                //   y el tejo aún no ha salido de la "cuerda" de la resortera.
                 cooldownPlataforma = COOLDOWN_PLATAFORMA_TICKS;
                 cooldownSuelo      = COOLDOWN_SUELO_TICKS;
 
                 // Lógica resortera: el tejo se jala hacia izquierda y abajo,
                 // sale disparado hacia derecha y arriba.
-                // x0 negativo = cuerda estirada hacia atrás (se compensa con v0x en los primeros ticks).
-                // v0x mínimo 1 para evitar que un tiro casi vertical deje v0x=0
-                // y genere colisión fantasma con la plataforma en xt≈0.
-                // FIX: y0 = 0 siempre. v0y ya captura el impulso vertical;
-                // meter deltaY en y0 causaba Y negativa desde t=0 →
-                // el tejo empezaba bajo el suelo y generaba rebote fantasma.
+.
                 x0  = -Math.Abs(deltaX);
                 y0  = 0;
                 v0x = Math.Max(1.0, Math.Abs(deltaX) * 1.0);
@@ -231,15 +213,13 @@ namespace MovimientoParabólico
             }
         }
 
-        // ════════════════════════════════════════════════════════════════
         //  TIMER
-        // ════════════════════════════════════════════════════════════════
         private void timer1_Tick(object sender, EventArgs e)
         {
             // 1. Física
             double xt = v0x * t + x0;
             double yt = -0.5 * gravity * t * t + v0y * t + y0;
-            double vxt = v0x;                        // FIX 3: vx siempre >= 0, nunca negativo
+            double vxt = v0x;                       
             double vyt = -gravity * t + v0y;
             double vt = Math.Sqrt(vxt * vxt + vyt * vyt);
             double ang = Math.Atan2(vyt, vxt) * 180.0 / Math.PI;
@@ -263,7 +243,7 @@ namespace MovimientoParabólico
             if ( cooldownPlataforma > 0 ) cooldownPlataforma--;
             if ( cooldownSuelo      > 0 ) cooldownSuelo--;
 
-            // 5. Actualizar cálculos (siempre, antes de cualquier return)
+            // 5. Actualizar cálculos 
             formCalculos.ActualizarEnTiempoReal(
                 tAcumulado, xt, yt, vxt, vyt, vt, ang,
                 listT, listX, listY,
@@ -272,7 +252,7 @@ namespace MovimientoParabólico
                 reboteVx, reboteVy, reboteV, reboteAng
             );
 
-            // ── CERDITO → detener ────────────────────────────────────────
+            // CERDITO → detener 
             if ( picTejoF.Bounds.IntersectsWith(picObjetivoF.Bounds) )
             {
                 Detener($"¡Le diste a King Pig!\n\nPosición: ({xt:F1}, {yt:F1}) px\nVelocidad: {vt:F2} px/s",
@@ -280,15 +260,14 @@ namespace MovimientoParabólico
                 return;
             }
 
-            // ── OBSTÁCULO → detener ──────────────────────────────────────
+            // OBSTÁCULO → detener 
             if ( picTejoF.Bounds.IntersectsWith(picObstaculoF.Bounds) )
             {
                 Detener("Chocaste con el obstáculo ", "Colisión", MessageBoxIcon.Warning);
                 return;
             }
 
-            // ── PLATAFORMA → rebote ───────────────────────────────────────
-            // FIX 4: xt > 1 para ignorar el tick inicial en origen (rebote fantasma)
+            //  PLATAFORMA → rebote 
             if ( picTejoF.Bounds.IntersectsWith(picPlataformaF.Bounds)
                 && cooldownPlataforma == 0
                 && numRebotes < MAX_REBOTES
@@ -312,13 +291,13 @@ namespace MovimientoParabólico
 
                 if ( minVertical <= minHorizontal )
                 {
-                    // Rebote vertical (superior o inferior de la plataforma)
+                    // Rebote vertical 
                     if ( vyt <= 0 )
                     {
                         // Tejo cae sobre la plataforma desde arriba
                         picTejoF.Top  = plat.Top - picTejoF.Height;
                         yFisicoRebote = initialTejoY - picTejoF.Top;
-                        newVx =  vxt * FACTOR_REBOTE;           // vx siempre positivo
+                        newVx =  vxt * FACTOR_REBOTE;           
                         newVy =  Math.Abs(vyt) * FACTOR_REBOTE; // rebotar hacia arriba
                         x0    = xt;
                         y0    = yFisicoRebote;
@@ -357,8 +336,7 @@ namespace MovimientoParabólico
                 }
 
                 numRebotes++;
-                // Al rebotar en plataforma: resetear solo cooldown de plataforma.
-                // cooldownSuelo queda en 0 para que pueda rebotar en suelo de inmediato.
+
                 cooldownPlataforma = COOLDOWN_PLATAFORMA_TICKS;
                 cooldownSuelo      = 0;
 
@@ -376,7 +354,7 @@ namespace MovimientoParabólico
                 return;
             }
 
-            // ── SUELO → rebotar o detener ─────────────────────────────────
+            // SUELO → rebotar o detener 
             if ( picTejoF.Bottom >= picSueloF.Top && cooldownSuelo == 0 )
             {
                 if ( numRebotes < MAX_REBOTES )
@@ -384,14 +362,14 @@ namespace MovimientoParabólico
                     picTejoF.Top = picSueloF.Top - picTejoF.Height;
                     double yFisicoSuelo = initialTejoY - picTejoF.Top;
 
-                    // FIX 6: vx siempre positivo en rebote de suelo
+                  
                     double newVx = Math.Abs(vxt) * FACTOR_REBOTE;
                     double newVy = Math.Abs(vyt) * FACTOR_REBOTE; // rebotar hacia arriba
                     double vRebote = Math.Sqrt(newVx * newVx + newVy * newVy);
                     double angRebote = Math.Atan2(newVy, newVx) * 180.0 / Math.PI;
 
                     numRebotes++;
-                    // Al rebotar en suelo: resetear solo cooldown de suelo.
+                    
                     cooldownSuelo = COOLDOWN_SUELO_TICKS;
 
                     GuardarRebote(tAcumulado, xt, yFisicoSuelo, newVx, newVy, vRebote, angRebote);
@@ -412,21 +390,21 @@ namespace MovimientoParabólico
                 return;
             }
 
-            // ── TECHO → detener ──────────────────────────────────────────
+            // Limite superioir del form
             if ( picTejoF.Top <= 0 )
             {
                 Detener("Baby Rosi salió por el techo", "Fin", MessageBoxIcon.Information);
                 return;
             }
 
-            // ── BORDE IZQUIERDO → detener ────────────────────────────────
+            // Limite izquierdo form
             if ( picTejoF.Left <= 0 )
             {
                 Detener("Baby Rosi salió por la izquierda", "Fin", MessageBoxIcon.Information);
                 return;
             }
 
-            // ── BORDE DERECHO → detener ──────────────────────────────────
+            // Limite derecho form
             if ( picTejoF.Right >= this.ClientSize.Width )
             {
                 Detener("Baby Rosi salió por la derecha", "Fin", MessageBoxIcon.Information);
@@ -437,9 +415,7 @@ namespace MovimientoParabólico
             tAcumulado += 0.05;
         }
 
-        // ════════════════════════════════════════════════════════════════
         //  HELPERS
-        // ════════════════════════════════════════════════════════════════
         private void Detener(string mensaje, string titulo, MessageBoxIcon icono)
         {
             timer1.Enabled      = false;
