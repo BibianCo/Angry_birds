@@ -52,9 +52,6 @@
             // 
             // picSueloF
             // 
-            this.picSueloF.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
             this.picSueloF.Location = new System.Drawing.Point(215, 566);
             this.picSueloF.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.picSueloF.Name = "picSueloF";
@@ -76,14 +73,11 @@
             // 
             // picObstaculoF
             // 
-            this.picObstaculoF.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
             this.picObstaculoF.Image = ((System.Drawing.Image)(resources.GetObject("picObstaculoF.Image")));
-            this.picObstaculoF.Location = new System.Drawing.Point(360, 428);
+            this.picObstaculoF.Location = new System.Drawing.Point(439, 395);
             this.picObstaculoF.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.picObstaculoF.Name = "picObstaculoF";
-            this.picObstaculoF.Size = new System.Drawing.Size(120, 139);
+            this.picObstaculoF.Size = new System.Drawing.Size(123, 153);
             this.picObstaculoF.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage;
             this.picObstaculoF.TabIndex = 5;
             this.picObstaculoF.TabStop = false;
@@ -116,15 +110,12 @@
             // 
             // picPlataformaF
             // 
-            this.picPlataformaF.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
             this.picPlataformaF.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch;
             this.picPlataformaF.Image = ((System.Drawing.Image)(resources.GetObject("picPlataformaF.Image")));
-            this.picPlataformaF.Location = new System.Drawing.Point(653, 155);
+            this.picPlataformaF.Location = new System.Drawing.Point(592, 141);
             this.picPlataformaF.Margin = new System.Windows.Forms.Padding(4);
             this.picPlataformaF.Name = "picPlataformaF";
-            this.picPlataformaF.Size = new System.Drawing.Size(124, 30);
+            this.picPlataformaF.Size = new System.Drawing.Size(170, 41);
             this.picPlataformaF.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage;
             this.picPlataformaF.TabIndex = 9;
             this.picPlataformaF.TabStop = false;
@@ -146,7 +137,7 @@
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(64)))), ((int)(((byte)(64)))), ((int)(((byte)(64)))));
-            this.ClientSize = new System.Drawing.Size(1123, 634);
+            this.ClientSize = new System.Drawing.Size(1129, 649);
             this.Controls.Add(this.btnMostrar);
             this.Controls.Add(this.picPlataformaF);
             this.Controls.Add(this.picTejoF);
