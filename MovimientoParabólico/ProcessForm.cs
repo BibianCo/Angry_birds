@@ -28,14 +28,12 @@ namespace MovimientoParabólico
         bool enMovimiento = false;
         bool simulacionTerminada = false;
 
-        // Rebotes 
+        // Rebotes
         int numRebotes = 0;
         const int MAX_REBOTES = 2;
         const double FACTOR_REBOTE = 0.6;
 
         // Cooldowns independientes por superficie.
-        // cooldownPlataforma se activa al inicio para evitar rebote espurio en t=0.
-        // cooldownSuelo arranca en 0 porque el tejo empieza en el aire.
         int cooldownPlataforma = 0;
         int cooldownSuelo = 0;
         const int COOLDOWN_PLATAFORMA_TICKS = 8;
@@ -50,7 +48,7 @@ namespace MovimientoParabólico
         List<double> listV = new List<double>();
         List<double> listAng = new List<double>();
 
-        // Listas rebotes 
+        // Listas rebotes
         List<double> reboteT = new List<double>();
         List<double> reboteX = new List<double>();
         List<double> reboteY = new List<double>();
@@ -59,7 +57,76 @@ namespace MovimientoParabólico
         List<double> reboteV = new List<double>();
         List<double> reboteAng = new List<double>();
 
+        // ── Posiciones relativas (fracción del ClientSize) ───────────────
+        private PointF relTejo, relObstaculo, relSuelo;
+        private PointF relObjetivo, relPlataforma;
+        private SizeF relTejoSz, relObstaculoSz, relSueloSz;
+        private SizeF relObjetivoSz, relPlataformaSz;
+
+        // ── Helpers de conversión relativa ───────────────────────────────
+        private PointF ToRelative(Point p) =>
+            new PointF((float)p.X / ClientSize.Width,
+                       (float)p.Y / ClientSize.Height);
+
+        private SizeF ToRelativeSz(Size s) =>
+            new SizeF((float)s.Width  / ClientSize.Width,
+                      (float)s.Height / ClientSize.Height);
+
+        private Point FromRelative(PointF r) =>
+            new Point((int)(r.X * ClientSize.Width),
+                      (int)(r.Y * ClientSize.Height));
+
+        private Size FromRelativeSz(SizeF r) =>
+            new Size(Math.Max(1, (int)(r.Width  * ClientSize.Width)),
+                     Math.Max(1, (int)(r.Height * ClientSize.Height)));
+
+        // ── Aplica posiciones relativas a todos los PictureBox ───────────
+        private void AplicarPosicionesRelativas()
+        {
+            picTejoF.Location       = FromRelative(relTejo);
+            picTejoF.Size           = FromRelativeSz(relTejoSz);
+
+            picObstaculoF.Location  = FromRelative(relObstaculo);
+            picObstaculoF.Size      = FromRelativeSz(relObstaculoSz);
+
+            picSueloF.Location      = FromRelative(relSuelo);
+            picSueloF.Size          = FromRelativeSz(relSueloSz);
+
+            picObjetivoF.Location   = FromRelative(relObjetivo);
+            picObjetivoF.Size       = FromRelativeSz(relObjetivoSz);
+
+            picPlataformaF.Location = FromRelative(relPlataforma);
+            picPlataformaF.Size     = FromRelativeSz(relPlataformaSz);
+
+            // Sincronizar backForm
+            if ( backForm != null )
+            {
+                backForm.TejoLocation       = picTejoF.Location;
+                backForm.ObstaculoLocation  = picObstaculoF.Location;
+                backForm.SueloLocation      = picSueloF.Location;
+                backForm.ObjetivoLocation   = picObjetivoF.Location;
+                backForm.PlatafromaLocation = picPlataformaF.Location;
+            }
+        }
+
+        // ── Guarda las relativas de todos los PictureBox ─────────────────
+        private void GuardarPosicionesRelativas()
+        {
+            relTejo        = ToRelative(picTejoF.Location);
+            relTejoSz      = ToRelativeSz(picTejoF.Size);
+            relObstaculo   = ToRelative(picObstaculoF.Location);
+            relObstaculoSz = ToRelativeSz(picObstaculoF.Size);
+            relSuelo       = ToRelative(picSueloF.Location);
+            relSueloSz     = ToRelativeSz(picSueloF.Size);
+            relObjetivo    = ToRelative(picObjetivoF.Location);
+            relObjetivoSz  = ToRelativeSz(picObjetivoF.Size);
+            relPlataforma  = ToRelative(picPlataformaF.Location);
+            relPlataformaSz= ToRelativeSz(picPlataformaF.Size);
+        }
+
+        // ════════════════════════════════════════════════════════════════
         //  LOAD
+        // ════════════════════════════════════════════════════════════════
         private void ProcessForm_Load(object sender, EventArgs e)
         {
             backForm = new BackForm()
@@ -91,6 +158,9 @@ namespace MovimientoParabólico
             initialTejoY = picTejoF.Location.Y;
 
             PosicionarObjetivosAleatorio();
+
+            // Guardar posiciones relativas DESPUÉS de posicionar todo
+            GuardarPosicionesRelativas();
         }
 
         private void PosicionarObjetivosAleatorio()
@@ -107,9 +177,20 @@ namespace MovimientoParabólico
             Point posCerdito = new Point(680, pyCerdito);
             picObjetivoF.Location     = posCerdito;
             backForm.ObjetivoLocation = posCerdito;
+
+            // Actualizar relativas con las nuevas posiciones aleatorias
+            if ( ClientSize.Width > 0 && ClientSize.Height > 0 )
+            {
+                relPlataforma    = ToRelative(picPlataformaF.Location);
+                relPlataformaSz  = ToRelativeSz(picPlataformaF.Size);
+                relObjetivo      = ToRelative(picObjetivoF.Location);
+                relObjetivoSz    = ToRelativeSz(picObjetivoF.Size);
+            }
         }
 
-        //  MOVE
+        // ════════════════════════════════════════════════════════════════
+        //  MOVE / RESIZE
+        // ════════════════════════════════════════════════════════════════
         private void ProcessForm_Move(object sender, EventArgs e)
         {
             if ( backForm != null )
@@ -123,15 +204,33 @@ namespace MovimientoParabólico
                 backForm.Size     = this.Size;
                 backForm.Location = this.Location;
             }
+
+            // Evitar división por cero durante minimización
+            if ( ClientSize.Width <= 0 || ClientSize.Height <= 0 ) return;
+
+            // Reubicar todos los objetos proporcionalmente
+            AplicarPosicionesRelativas();
+
+            // Actualizar origen del tejo para la física
+            // Solo si la simulación no está en curso
+            if ( !enMovimiento )
+            {
+                initialTejoX = picTejoF.Location.X;
+                initialTejoY = picTejoF.Location.Y;
+            }
         }
 
+        // ════════════════════════════════════════════════════════════════
         //  BOTÓN REINICIAR
+        // ════════════════════════════════════════════════════════════════
         private void button1_Click(object sender, EventArgs e)
         {
             Application.Restart();
         }
 
+        // ════════════════════════════════════════════════════════════════
         //  BOTÓN MOSTRAR / OCULTAR CÁLCULOS
+        // ════════════════════════════════════════════════════════════════
         private void btnMostrar_Click(object sender, EventArgs e)
         {
             if ( formCalculos == null || formCalculos.IsDisposed )
@@ -156,8 +255,9 @@ namespace MovimientoParabólico
             this.BringToFront();
         }
 
+        // ════════════════════════════════════════════════════════════════
         //  ARRASTRE DEL ANGRY BIRD
-
+        // ════════════════════════════════════════════════════════════════
         private void picTejoF_MouseDown(object sender, MouseEventArgs e)
         {
             if ( enMovimiento || simulacionTerminada ) return;
@@ -195,8 +295,7 @@ namespace MovimientoParabólico
                 cooldownPlataforma = COOLDOWN_PLATAFORMA_TICKS;
                 cooldownSuelo      = COOLDOWN_SUELO_TICKS;
 
-                // Lógica resortera: el tejo se jala hacia izquierda y abajo,
-                // sale disparado hacia derecha y arriba.
+                // Lógica resortera
                 x0  = -Math.Abs(deltaX);
                 y0  = 0;
                 v0x = Math.Max(1.0, Math.Abs(deltaX) * 1.0);
@@ -212,13 +311,15 @@ namespace MovimientoParabólico
             }
         }
 
+        // ════════════════════════════════════════════════════════════════
         //  TIMER
+        // ════════════════════════════════════════════════════════════════
         private void timer1_Tick(object sender, EventArgs e)
         {
             // 1. Física
             double xt = v0x * t + x0;
             double yt = -0.5 * gravity * t * t + v0y * t + y0;
-            double vxt = v0x;                       
+            double vxt = v0x;
             double vyt = -gravity * t + v0y;
             double vt = Math.Sqrt(vxt * vxt + vyt * vyt);
             double ang = Math.Atan2(vyt, vxt) * 180.0 / Math.PI;
@@ -238,11 +339,11 @@ namespace MovimientoParabólico
             listV.Add(Math.Round(vt, 2));
             listAng.Add(Math.Round(ang, 2));
 
-            // 4. Reducir cooldowns de forma independiente
+            // 4. Reducir cooldowns
             if ( cooldownPlataforma > 0 ) cooldownPlataforma--;
             if ( cooldownSuelo      > 0 ) cooldownSuelo--;
 
-            // 5. Actualizar cálculos 
+            // 5. Actualizar cálculos
             formCalculos.ActualizarEnTiempoReal(
                 tAcumulado, xt, yt, vxt, vyt, vt, ang,
                 listT, listX, listY,
@@ -251,7 +352,7 @@ namespace MovimientoParabólico
                 reboteVx, reboteVy, reboteV, reboteAng
             );
 
-            // CERDITO → detener 
+            // ── CERDITO → detener ────────────────────────────────────────
             if ( picTejoF.Bounds.IntersectsWith(picObjetivoF.Bounds) )
             {
                 Detener($"¡Le diste a King Pig!\n\nPosición: ({xt:F1}, {yt:F1}) px\nVelocidad: {vt:F2} px/s",
@@ -259,14 +360,14 @@ namespace MovimientoParabólico
                 return;
             }
 
-            // OBSTÁCULO → detener 
+            // ── OBSTÁCULO → detener ──────────────────────────────────────
             if ( picTejoF.Bounds.IntersectsWith(picObstaculoF.Bounds) )
             {
-                Detener("Chocaste con el obstáculo ", "Colisión", MessageBoxIcon.Warning);
+                Detener("Chocaste con el obstáculo", "Colisión", MessageBoxIcon.Warning);
                 return;
             }
 
-            //  PLATAFORMA → rebote 
+            // ── PLATAFORMA → rebote ──────────────────────────────────────
             if ( picTejoF.Bounds.IntersectsWith(picPlataformaF.Bounds)
                 && cooldownPlataforma == 0
                 && numRebotes < MAX_REBOTES
@@ -290,41 +391,39 @@ namespace MovimientoParabólico
 
                 if ( minVertical <= minHorizontal )
                 {
-                    // Rebote vertical 
+                    // Rebote vertical
                     if ( vyt <= 0 )
                     {
-                        // Tejo cae sobre la plataforma desde arriba
+                        // Cae sobre la plataforma desde arriba
                         picTejoF.Top  = plat.Top - picTejoF.Height;
                         yFisicoRebote = initialTejoY - picTejoF.Top;
-                        newVx =  vxt * FACTOR_REBOTE;           
-                        newVy =  Math.Abs(vyt) * FACTOR_REBOTE; // rebotar hacia arriba
+                        newVx =  vxt * FACTOR_REBOTE;
+                        newVy =  Math.Abs(vyt) * FACTOR_REBOTE;
                         x0    = xt;
                         y0    = yFisicoRebote;
                     }
                     else
                     {
-                        // Tejo golpea la base de la plataforma desde abajo
+                        // Golpea la base desde abajo
                         picTejoF.Top  = plat.Bottom;
                         yFisicoRebote = initialTejoY - picTejoF.Top;
                         newVx =  vxt * FACTOR_REBOTE;
-                        newVy = -Math.Abs(vyt) * FACTOR_REBOTE; // rebotar hacia abajo
+                        newVy = -Math.Abs(vyt) * FACTOR_REBOTE;
                         x0    = xt;
                         y0    = yFisicoRebote;
                     }
                 }
                 else
                 {
-                    // Rebote lateral: invertir vx en dirección contraria con FACTOR_REBOTE.
+                    // Rebote lateral
                     if ( vxt >= 0 )
                     {
-                        // Venía hacia la derecha → golpea lado izquierdo → rebota hacia la izquierda
                         picTejoF.Left = plat.Left - picTejoF.Width;
                         newVx = -Math.Abs(vxt) * FACTOR_REBOTE;
                         newVy =  vyt * FACTOR_REBOTE;
                     }
                     else
                     {
-                        // Venía hacia la izquierda → golpea lado derecho → rebota hacia la derecha
                         picTejoF.Left = plat.Right;
                         newVx =  Math.Abs(vxt) * FACTOR_REBOTE;
                         newVy =  vyt * FACTOR_REBOTE;
@@ -335,7 +434,6 @@ namespace MovimientoParabólico
                 }
 
                 numRebotes++;
-
                 cooldownPlataforma = COOLDOWN_PLATAFORMA_TICKS;
                 cooldownSuelo      = 0;
 
@@ -353,7 +451,7 @@ namespace MovimientoParabólico
                 return;
             }
 
-            // SUELO → rebotar o detener 
+            // ── SUELO → rebotar o detener ────────────────────────────────
             if ( picTejoF.Bottom >= picSueloF.Top && cooldownSuelo == 0 )
             {
                 if ( numRebotes < MAX_REBOTES )
@@ -361,14 +459,12 @@ namespace MovimientoParabólico
                     picTejoF.Top = picSueloF.Top - picTejoF.Height;
                     double yFisicoSuelo = initialTejoY - picTejoF.Top;
 
-                  
                     double newVx = Math.Abs(vxt) * FACTOR_REBOTE;
-                    double newVy = Math.Abs(vyt) * FACTOR_REBOTE; // rebotar hacia arriba
+                    double newVy = Math.Abs(vyt) * FACTOR_REBOTE;
                     double vRebote = Math.Sqrt(newVx * newVx + newVy * newVy);
                     double angRebote = Math.Atan2(newVy, newVx) * 180.0 / Math.PI;
 
                     numRebotes++;
-                    
                     cooldownSuelo = COOLDOWN_SUELO_TICKS;
 
                     GuardarRebote(tAcumulado, xt, yFisicoSuelo, newVx, newVy, vRebote, angRebote);
@@ -389,21 +485,21 @@ namespace MovimientoParabólico
                 return;
             }
 
-            // Limite superioir del form
+            // ── Límite superior ──────────────────────────────────────────
             if ( picTejoF.Top <= 0 )
             {
                 Detener("Baby Rosi salió por el techo", "Fin", MessageBoxIcon.Information);
                 return;
             }
 
-            // Limite izauei
+            // ── Límite izquierdo ─────────────────────────────────────────
             if ( picTejoF.Left <= 0 )
             {
                 Detener("Baby Rosi salió por la izquierda", "Fin", MessageBoxIcon.Information);
                 return;
             }
 
-            // ── BORDE DERECHO → detener ──────────────────────────────────
+            // ── Límite derecho ───────────────────────────────────────────
             if ( picTejoF.Right >= this.ClientSize.Width )
             {
                 Detener("Baby Rosi salió por la derecha", "Fin", MessageBoxIcon.Information);
