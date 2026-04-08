@@ -197,7 +197,6 @@ namespace MovimientoParabólico
 
                 // Lógica resortera: el tejo se jala hacia izquierda y abajo,
                 // sale disparado hacia derecha y arriba.
-.
                 x0  = -Math.Abs(deltaX);
                 y0  = 0;
                 v0x = Math.Max(1.0, Math.Abs(deltaX) * 1.0);
@@ -397,14 +396,14 @@ namespace MovimientoParabólico
                 return;
             }
 
-            // Limite izquierdo form
+            // Limite izauei
             if ( picTejoF.Left <= 0 )
             {
                 Detener("Baby Rosi salió por la izquierda", "Fin", MessageBoxIcon.Information);
                 return;
             }
 
-            // Limite derecho form
+            // ── BORDE DERECHO → detener ──────────────────────────────────
             if ( picTejoF.Right >= this.ClientSize.Width )
             {
                 Detener("Baby Rosi salió por la derecha", "Fin", MessageBoxIcon.Information);
@@ -415,7 +414,9 @@ namespace MovimientoParabólico
             tAcumulado += 0.05;
         }
 
+        // ════════════════════════════════════════════════════════════════
         //  HELPERS
+        // ════════════════════════════════════════════════════════════════
         private void Detener(string mensaje, string titulo, MessageBoxIcon icono)
         {
             timer1.Enabled      = false;
